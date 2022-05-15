@@ -202,10 +202,11 @@ public class SheetViewController: UIViewController {
         
         self.compatibleAdditionalSafeAreaInsets = UIEdgeInsets(top: -self.options.pullBarHeight, left: 0, bottom: 0, right: 0)
         
-        var frame = self.view.frame
-        frame.height -= self.options.bottomOffset
-        frame.origin.x += self.options.bottomOffset
-        self.view.frame = frame
+        let frame = self.view.frame
+        self.view.frame = CGRect(x: frame.origin.x + self.options.bottomOffset,
+                                 y: frame.origin.y,
+                                 width: frame.size.width,
+                                 height:  frame.height - self.options.bottomOffset)
         
         self.view.backgroundColor = UIColor.clear
         self.addPanGestureRecognizer()
