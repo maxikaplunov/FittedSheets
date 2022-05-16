@@ -17,15 +17,15 @@ public class SheetViewController: UIViewController {
     /// Automatically grow/move the sheet to accomidate the keyboard. Defaults to false.
     public var autoAdjustToKeyboard = SheetViewController.autoAdjustToKeyboard
     
-	/// Default value for allowPullingPastMaxHeight. Defaults to true.
-	public static var allowPullingPastMaxHeight = true
+    /// Default value for allowPullingPastMaxHeight. Defaults to true.
+    public static var allowPullingPastMaxHeight = true
     /// Allow pulling past the maximum height and bounce back. Defaults to true.
     public var allowPullingPastMaxHeight = SheetViewController.allowPullingPastMaxHeight
     
-	/// Default value for allowPullingPastMinHeight. Defaults to true.
-	public static var allowPullingPastMinHeight = true
-	/// Allow pulling below the minimum height and bounce back. Defaults to true.
-	public var allowPullingPastMinHeight = SheetViewController.allowPullingPastMinHeight
+    /// Default value for allowPullingPastMinHeight. Defaults to true.
+    public static var allowPullingPastMinHeight = true
+    /// Allow pulling below the minimum height and bounce back. Defaults to true.
+    public var allowPullingPastMinHeight = SheetViewController.allowPullingPastMinHeight
     
     /// The sizes that the sheet will attempt to pin to. Defaults to intrinsic only.
     public var sizes: [SheetSize] = [.intrinsic] {
@@ -145,7 +145,7 @@ public class SheetViewController: UIViewController {
     var overflowView = UIView()
     var overlayTapGesture: UITapGestureRecognizer?
     private var contentViewHeightConstraint: NSLayoutConstraint!
-    
+    private var contentViewBottomConstraint: NSLayoutConstraint!
     /// The child view controller's scroll view we are watching so we can override the pull down/up to work on the sheet when needed
     private weak var childScrollView: UIScrollView?
     
@@ -201,13 +201,7 @@ public class SheetViewController: UIViewController {
         super.viewDidLoad()
         
         self.compatibleAdditionalSafeAreaInsets = UIEdgeInsets(top: -self.options.pullBarHeight, left: 0, bottom: 0, right: 0)
-        
-        let frame = self.view.frame
-        self.view.frame = CGRect(x: frame.origin.x + self.options.bottomOffset,
-                                 y: frame.origin.y,
-                                 width: frame.size.width,
-                                 height:  frame.height - self.options.bottomOffset)
-        
+     
         self.view.backgroundColor = UIColor.clear
         self.addPanGestureRecognizer()
         self.addOverlay()
@@ -344,7 +338,7 @@ public class SheetViewController: UIViewController {
             } else {
                 top = max(12, UIApplication.shared.windows.first(where:  { $0.isKeyWindow })?.compatibleSafeAreaInsets.top ?? 12)
             }
-            $0.bottom.pinToSuperview()
+            self.contentViewBottomConstraint = $0.bottom.pinToSuperview()
             $0.top.pinToSuperview(inset: top, relation: .greaterThanOrEqual).priority = UILayoutPriority(999)
         }
     }
@@ -383,12 +377,14 @@ public class SheetViewController: UIViewController {
         if newHeight > maxHeight {
             newHeight = maxHeight
         }
+//        newHeight = newHeight
         
         switch gesture.state {
             case .cancelled, .failed:
                 UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseOut], animations: {
                     self.contentViewController.view.transform = CGAffineTransform.identity
                     self.contentViewHeightConstraint.constant = self.height(for: self.currentSize)
+                    self.contentViewBottomConstraint.constant = -self.options.bottomOffset
                     self.transition.setPresentor(percentComplete: 0)
                     self.overlayView.alpha = 1
                 }, completion: { _ in
@@ -397,12 +393,14 @@ public class SheetViewController: UIViewController {
             
             case .began, .changed:
                 self.contentViewHeightConstraint.constant = newHeight
-                
+            self.contentViewBottomConstraint.constant = -self.options.bottomOffset
+            
                 if offset > 0 {
+                    self.contentViewHeightConstraint.constant = newHeight - offset
+                    
                     let percent = max(0, min(1, offset / max(1, newHeight)))
                     self.transition.setPresentor(percentComplete: percent)
                     self.overlayView.alpha = 1 - percent
-                    self.contentViewController.view.transform = CGAffineTransform(translationX: 0, y: offset)
                 } else {
                     self.contentViewController.view.transform = CGAffineTransform.identity
                 }
@@ -539,7 +537,7 @@ public class SheetViewController: UIViewController {
             case .marginFromTop(let margin):
                 contentHeight = (self.view.bounds.height) - margin + self.keyboardHeight
         }
-        return min(fullscreenHeight, contentHeight)
+        return min(fullscreenHeight, contentHeight) - options.bottomOffset
     }
     
     public func resize(to size: SheetSize,
@@ -563,6 +561,8 @@ public class SheetViewController: UIViewController {
             UIView.animate(withDuration: duration, delay: 0, options: options, animations: { [weak self] in
                 guard let self = self, let constraint = self.contentViewHeightConstraint else { return }
                 constraint.constant = newHeight
+                self.contentViewBottomConstraint.constant = -self.options.bottomOffset
+                
                 self.contentViewController.view.layoutIfNeeded()
             }, completion: { _ in
                 if previousSize != size {
@@ -574,6 +574,7 @@ public class SheetViewController: UIViewController {
         } else {
             UIView.performWithoutAnimation {
                 self.contentViewHeightConstraint?.constant = self.height(for: size)
+                self.contentViewBottomConstraint.constant = -self.options.bottomOffset
                 self.contentViewController.view.layoutIfNeeded()
             }
             complete?()
