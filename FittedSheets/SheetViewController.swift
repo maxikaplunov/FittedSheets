@@ -144,8 +144,8 @@ public class SheetViewController: UIViewController {
     var overlayTapView = UIView()
     var overflowView = UIView()
     var overlayTapGesture: UITapGestureRecognizer?
-    private var contentViewHeightConstraint: NSLayoutConstraint!
-    private var contentViewBottomConstraint: NSLayoutConstraint!
+    var contentViewHeightConstraint: NSLayoutConstraint!
+    var contentViewBottomConstraint: NSLayoutConstraint!
     /// The child view controller's scroll view we are watching so we can override the pull down/up to work on the sheet when needed
     private weak var childScrollView: UIScrollView?
     
@@ -423,10 +423,16 @@ public class SheetViewController: UIViewController {
                         initialSpringVelocity: self.options.transitionVelocity,
                         options: self.options.transitionAnimationOptions,
                         animations: {
-                        self.contentViewController.view.transform = CGAffineTransform(translationX: 0, y: self.contentViewController.view.bounds.height)
+                            self.contentViewHeightConstraint.constant = 0
+                            self.contentViewController.view.updateConstraints()
+                            self.contentViewController.view.layoutIfNeeded()
+                            self.view.layoutIfNeeded()
+
                         self.view.backgroundColor = UIColor.clear
-                        self.transition.setPresentor(percentComplete: 1)
+                       
+                        self.transition.setPresentor(percentComplete: 1 )
                         self.overlayView.alpha = 0
+                            
                     }, completion: { complete in
                         self.attemptDismiss(animated: false)
                     })
@@ -516,7 +522,7 @@ public class SheetViewController: UIViewController {
         })
     }
     
-    private func height(for size: SheetSize?) -> CGFloat {
+    func height(for size: SheetSize?) -> CGFloat {
         guard let size = size else { return 0 }
         let contentHeight: CGFloat
         let fullscreenHeight: CGFloat

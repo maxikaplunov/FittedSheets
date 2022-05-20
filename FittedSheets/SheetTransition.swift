@@ -32,9 +32,7 @@ public class SheetTransition: NSObject, UIViewControllerAnimatedTransitioning {
             }
             self.presenter = presenter
             
-            sheet.contentViewController.view.transform = .identity
             containerView.addSubview(sheet.view)
-            //sheet.view.frame = containerView.frame
             Constraints(for: sheet.view) {
                 $0.edges.pinToSuperview()
             }
@@ -44,7 +42,8 @@ public class SheetTransition: NSObject, UIViewControllerAnimatedTransitioning {
             sheet.contentViewController.updatePreferredHeight()
             sheet.resize(to: sheet.currentSize, animated: false)
             let contentView = sheet.contentViewController.contentView
-            contentView.transform = CGAffineTransform(translationX: 0, y: contentView.bounds.height)
+            sheet.contentViewBottomConstraint.constant = -options.bottomOffset
+            sheet.contentViewHeightConstraint.constant = 0
             sheet.overlayView.alpha = 0
             
             let heightPercent = contentView.bounds.height / UIScreen.main.bounds.height
@@ -55,6 +54,7 @@ public class SheetTransition: NSObject, UIViewControllerAnimatedTransitioning {
             
             // Use a normal animation to animate the shadown and background view
             UIView.animate(withDuration: self.options.transitionDuration * 0.6, delay: 0, options: [.curveEaseOut], animations: {
+              
                 if self.options.shrinkPresentingViewController {
                     let topSafeArea = UIApplication.shared.windows.filter {$0.isKeyWindow}.first?.compatibleSafeAreaInsets.top ?? 0
                     
@@ -73,6 +73,8 @@ public class SheetTransition: NSObject, UIViewControllerAnimatedTransitioning {
                 initialSpringVelocity: self.options.transitionVelocity * heightPercent,
                 options: self.options.transitionAnimationOptions,
                 animations: {
+                    sheet.contentViewBottomConstraint.constant = -self.options.bottomOffset
+                    sheet.contentViewHeightConstraint.constant =  sheet.height(for: sheet.currentSize)
                     contentView.transform = .identity
                 },
                 completion: { _ in
