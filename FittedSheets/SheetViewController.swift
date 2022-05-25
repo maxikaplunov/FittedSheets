@@ -683,7 +683,9 @@ public class SheetViewController: UIViewController {
 extension SheetViewController: SheetViewDelegate {
     func sheetPoint(inside point: CGPoint, with event: UIEvent?) -> Bool {
         let isInOverlay = self.overlayTapView.bounds.contains(point)
-        if self.allowGestureThroughOverlay, isInOverlay {
+        let isInBottomOffset = (self.view.frame.height - self.options.bottomOffset) < point.y
+        
+        if self.allowGestureThroughOverlay, (isInOverlay || isInBottomOffset) {
             return false
         } else {
             return true
@@ -699,6 +701,7 @@ extension SheetViewController: UIGestureRecognizerDelegate {
                 return !(view is UIControl)
             }
         }
+
         return true
     }
     
