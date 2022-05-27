@@ -599,9 +599,8 @@ public class SheetViewController: UIViewController {
                     self.removeFromParent()
                     self.didDismiss?(self)
                 }
-            } else {
-                self.dismiss(animated: animated, completion: nil)
             }
+            self.dismiss(animated: animated, completion: nil)
         }
     }
     
@@ -707,7 +706,12 @@ extension SheetViewController: UIGestureRecognizerDelegate {
     }
     
     public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        guard let panGestureRecognizer = gestureRecognizer as? InitialTouchPanGestureRecognizer, let childScrollView = self.childScrollView, let point = panGestureRecognizer.initialTouchLocation else { return true }
+        guard let panGestureRecognizer = gestureRecognizer as? InitialTouchPanGestureRecognizer,
+                let childScrollView = self.childScrollView,
+                let point = panGestureRecognizer.initialTouchLocation else {
+            return true
+            
+        }
         
         if let pan = gestureRecognizer as? UIPanGestureRecognizer, let closure = panGestureShouldBegin, let should = closure(pan) {
             return should
