@@ -188,13 +188,9 @@ public class SheetViewController: UIViewController {
     }
     
     public override func loadView() {
-        if self.options.useInlineMode {
-            let sheetView = SheetView()
-            sheetView.delegate = self
-            self.view = sheetView
-        } else {
-            super.loadView()
-        }
+        let sheetView = SheetView()
+        sheetView.delegate = self
+        self.view = sheetView
     }
     
     public override func viewDidLoad() {
@@ -599,8 +595,9 @@ public class SheetViewController: UIViewController {
                     self.removeFromParent()
                     self.didDismiss?(self)
                 }
+            } else {
+                self.dismiss(animated: animated, completion: nil)
             }
-            self.dismiss(animated: animated, completion: nil)
         }
     }
     

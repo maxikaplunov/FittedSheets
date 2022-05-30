@@ -38,6 +38,7 @@ public class SheetTransition: NSObject, UIViewControllerAnimatedTransitioning {
             }
             UIView.performWithoutAnimation {
                 sheet.view.layoutIfNeeded()
+                sheet.contentViewController.view.layoutIfNeeded()
             }
             sheet.contentViewController.updatePreferredHeight()
             sheet.resize(to: sheet.currentSize, animated: false)
@@ -76,6 +77,8 @@ public class SheetTransition: NSObject, UIViewControllerAnimatedTransitioning {
                     sheet.contentViewBottomConstraint.constant = -self.options.bottomOffset
                     sheet.contentViewHeightConstraint.constant =  sheet.height(for: sheet.currentSize)
                     contentView.transform = .identity
+                    sheet.contentViewController.view.layoutIfNeeded()
+                    sheet.view.layoutIfNeeded()
                 },
                 completion: { _ in
                     transitionContext.completeTransition(!transitionContext.transitionWasCancelled)
@@ -94,7 +97,12 @@ public class SheetTransition: NSObject, UIViewControllerAnimatedTransitioning {
             self.restorePresentor(
                 presenter,
                 animations: {
-                    contentView.transform = CGAffineTransform(translationX: 0, y: contentView.bounds.height)
+//                    contentView.transform = CGAffineTransform(translationX: 0, y: contentView.bounds.height)
+             
+                    sheet.contentViewHeightConstraint.constant =  0
+                    contentView.transform = .identity
+                    sheet.contentViewController.view.layoutIfNeeded()
+                    sheet.view.layoutIfNeeded()
                     sheet.overlayView.alpha = 0
                 }, completion: { _ in
                     transitionContext.completeTransition(!transitionContext.transitionWasCancelled)
