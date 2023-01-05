@@ -9,7 +9,7 @@
 #if os(iOS) || os(tvOS) || os(watchOS)
 import UIKit
 
-public class SheetViewController: UIViewController {
+open class SheetViewController: UIViewController {
     public private(set) var options: SheetOptions
     
     /// Default value for autoAdjustToKeyboard. Defaults to true.
@@ -26,6 +26,13 @@ public class SheetViewController: UIViewController {
     public static var allowPullingPastMinHeight = true
     /// Allow pulling below the minimum height and bounce back. Defaults to true.
     public var allowPullingPastMinHeight = SheetViewController.allowPullingPastMinHeight
+    
+    public var velocityMultiplier: CGFloat = 0.2
+    public var defaultAnimationDuration: Double = 0.2
+    
+    public var onPanGestureBegan: (() -> Void)?
+    public var onPanGestureChanged: (() -> Void)?
+    public var onPanGestureEnded: (() -> Void)?
     
     /// The sizes that the sheet will attempt to pin to. Defaults to intrinsic only.
     public var sizes: [SheetSize] = [.intrinsic] {
@@ -193,7 +200,7 @@ public class SheetViewController: UIViewController {
         self.view = sheetView
     }
     
-    public override func viewDidLoad() {
+    open override func viewDidLoad() {
         super.viewDidLoad()
         
         self.compatibleAdditionalSafeAreaInsets = UIEdgeInsets(top: -self.options.pullBarHeight, left: 0, bottom: 0, right: 0)
@@ -387,28 +394,33 @@ public class SheetViewController: UIViewController {
                     self.isPanning = false
                 })
             
-            case .began, .changed:
-                self.contentViewHeightConstraint.constant = newHeight
+        case .began:
+            onPanGestureBegan?()
+            fallthrough
+        case .changed:
+            self.contentViewHeightConstraint.constant = newHeight
             self.contentViewBottomConstraint.constant = -self.options.bottomOffset
             
-                if offset > 0 {
-                    self.contentViewHeightConstraint.constant = newHeight - offset
-                    
-                    let percent = max(0, min(1, offset / max(1, newHeight)))
-                    self.transition.setPresentor(percentComplete: percent)
-                    self.overlayView.alpha = 1 - percent
-                } else {
-                    self.contentViewController.view.transform = CGAffineTransform.identity
-                }
-            case .ended:
-                let velocity = (0.2 * gesture.velocity(in: self.view).y)
+            if offset > 0 {
+                self.contentViewHeightConstraint.constant = newHeight - offset
+                
+                let percent = max(0, min(1, offset / max(1, newHeight)))
+                self.transition.setPresentor(percentComplete: percent)
+                self.overlayView.alpha = 1 - percent
+            } else {
+                self.contentViewController.view.transform = CGAffineTransform.identity
+            }
+            onPanGestureChanged?()
+        case .ended:
+            onPanGestureEnded?()
+                let velocity = (velocityMultiplier * gesture.velocity(in: self.view).y)
                 var finalHeight = newHeight - offset - velocity
                 if velocity > options.pullDismissThreshod {
                     // They swiped hard, always just close the sheet when they do
                     finalHeight = -1
                 }
                 
-                let animationDuration = TimeInterval(abs(velocity*0.0002) + 0.2)
+                let animationDuration = TimeInterval(abs(velocity*0.0002) + defaultAnimationDuration)
                 
                 guard finalHeight > 0 || !self.dismissOnPull else {
                     // Dismiss
